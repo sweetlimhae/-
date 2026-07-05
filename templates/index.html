@@ -1,1 +1,74 @@
-<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#111827"><link rel="manifest" href="/static/manifest.json"><link rel="stylesheet" href="/static/style.css"><title>Odds AI</title></head><body><main><h1>Odds AI</h1><p class="sub">30분/1시간 전 경기 기준 2폴더 추천</p><section class="controls"><select id="sport"><option value="soccer">축구</option><option value="baseball">야구</option><option value="all">전체</option></select><select id="minutes"><option value="30">30분 전</option><option value="60" selected>1시간 전</option><option value="120">2시간 전</option></select><button onclick="loadData()">분석</button></section><section id="result"></section></main><script src="/static/app.js"></script></body></html>
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Odds AI</title>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <main class="container">
+    <h1>Odds AI</h1>
+    <p>30분/1시간 전 경기 기준 2폴더 추천</p>
+
+    <div class="controls">
+      <select id="sport">
+        <option value="all">전체</option>
+        <option value="soccer">축구</option>
+        <option value="baseball">야구</option>
+      </select>
+
+      <select id="window">
+        <option value="30">30분 전</option>
+        <option value="60" selected>1시간 전</option>
+      </select>
+
+      <button onclick="analyze()">분석</button>
+    </div>
+
+    <section id="results"></section>
+  </main>
+
+  <script>
+    async function analyze() {
+      const sport = document.getElementById("sport").value;
+      const windowValue = document.getElementById("window").value;
+      const results = document.getElementById("results");
+
+      results.innerHTML = "<p>분석 중...</p>";
+
+      const res = await fetch(`/api/analyze?sport=${sport}&window=${windowValue}`);
+      const data = await res.json();
+
+      let html = "";
+
+      for (const [type, games] of Object.entries(data.recommendations)) {
+        html += `<div class="card">
+          <h2>${type}</h2>`;
+
+        if (games.length === 0) {
+          html += `<p>조건에 맞는 경기가 없습니다.</p>`;
+        } else {
+          games.forEach(g => {
+            html += `
+              <div class="game">
+                <strong>${g.league} | ${g.home} vs ${g.away}</strong>
+                <p>추천: ${g.pick}</p>
+                <p>배당: ${g.odds} / 점수: ${g.score}</p>
+                <p>시작까지: ${g.start_in_minutes}분</p>
+                <ul>
+                  ${g.reason.map(r => `<li>${r}</li>`).join("")}
+                </ul>
+              </div>
+            `;
+          });
+        }
+
+        html += `</div>`;
+      }
+
+      results.innerHTML = html;
+    }
+  </script>
+</body>
+</html>
